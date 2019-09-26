@@ -1,5 +1,5 @@
 [package]
-name = "rs-pack"
+name = "pypack"
 version = "0.1.0"
 authors = ["scullionw <williamscullion@gmail.com>"]
 edition = "2018"
@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 rust-embed = "5.1.0"
 tempfile = "3.1.0"
+
+[features]
+nowindow = []
