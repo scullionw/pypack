@@ -11,4 +11,5 @@ rust-embed = "5.1.0"
 tempfile = "3.1.0"
 
 [features]
+default = []
 nowindow = []

@@ -25,36 +25,59 @@ fn execute(temp_dir: &Path, exe_path: &Path) {
 }
 
 pub trait RustEmbedExt {
-    fn dump_and_exec();
+    fn run();
 }
 
 impl<T: RustEmbed> RustEmbedExt for T {
-    fn dump_and_exec() {
-        let mut exe_path = None;
-        let temp_dir = TempDir::new().expect("Could not create temp dir");
+    fn run() {
+        let mut packed = Packed::<T>::new();
+        packed.dump();
+        packed.launch();
+    }
+}
+
+struct Packed<T: RustEmbed> {
+    temp_dir: tempfile::TempDir,
+    exe_path: ::std::option::Option<::std::path::PathBuf>,
+    marker: std::marker::PhantomData<T>,
+}
+
+impl<T: RustEmbed> Packed<T> {
+    fn new() -> Self {
+        Self {
+            temp_dir: tempfile::TempDir::new().expect("Could not create temp dir"),
+            exe_path: None,
+            marker: std::marker::PhantomData,
+        }
+    }
+
+    fn dump(&mut self) {
         for file in T::iter() {
-            let file_path = Path::new(file.as_ref());
+            let file_path = ::std::path::Path::new(file.as_ref());
 
             if file_path.extension().expect("Could not get filename") == "exe" {
-                exe_path = Some(file_path.to_path_buf())
+                self.exe_path = Some(file_path.to_path_buf())
             };
 
-            let path = temp_dir.path().join(file_path);
+            let path = self.temp_dir.path().join(file_path);
 
             let folders = path.parent().expect("Could not get parent");
 
             if !folders.to_str().expect("Not unicode!").is_empty() {
-                fs::create_dir_all(folders)
+                ::std::fs::create_dir_all(folders)
                     .expect("Could not create dirs recursively for embedded files");
             }
 
             let data = T::get(file_path.to_str().expect("File path is not unicode"))
                 .expect("Could not get the asset");
 
-            fs::write(path, data).expect("Writing in temp directory failed");
+            ::std::fs::write(path, data).expect("Writing in temp directory failed");
         }
-        if let Some(exe_path) = &exe_path {
-            execute(temp_dir.path(), exe_path);
+    }
+
+    fn launch(&self) {
+        if let Some(exe_path) = &self.exe_path {
+            execute(self.temp_dir.path(), exe_path);
         } else {
             eprintln!("No executable found!");
         }
